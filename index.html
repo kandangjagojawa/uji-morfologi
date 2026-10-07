@@ -236,7 +236,7 @@
     <div class="input-section">
         <div class="input-row">
             <label for="inputKata">Kata Dasar (Latin):</label>
-            <input type="text" id="inputKata" placeholder="Masukkan kata dasar (contoh: maca, kukur)..." value="maca">
+            <input type="text" id="inputKata" placeholder="Masukkan kata dasar (contoh: waca, kukur)..." value="waca">
             <button onclick="jalankanPengujian()">Uji Kombinasi</button>
         </div>
 
@@ -304,20 +304,21 @@
 </script>
 
 <script>
+    // Kategori kata dasar (semua huruf kecil & 'Maca' diganti 'waca')
     const kataVokal = [
-        "Maca", "Lunga", "Teka", "Gawa", "Tangi", "Bali", "Lali", "Mari", "Tuku", "Mlaku",
-        "Turu", "Guyu", "Gawé", "Saré", "Pépé", "Dhédhé", "Anggo", "Aso", "Plongo", "Lokro"
+        "waca", "lunga", "teka", "gawa", "tangi", "bali", "lali", "mari", "tuku", "mlaku",
+        "turu", "guyu", "gawé", "saré", "pépé", "dhédhé", "anggo", "aso", "plongo", "lokro"
     ];
 
     const kataKonsonan = [
-        "Kukur", "Kethok", "Kurung", "Kemah", "Golèk", "Cekel", "Cukur", "Cethot", "Colong",
-        "Jupuk", "Jaluk", "Jaga", "Junjung", "Sapu", "Silih", "Siram", "Sebul", "Yasa",
-        "Yekti", "Yitna", "Yoga", "Thuthuk", "Thukul", "Thèthèl", "Thithil", "Dhahar",
-        "Dhawuh", "Dhodhok", "Dhéplok", "Nesu", "Nunut", "Nalar", "Niat", "Rabi",
-        "Rungu", "Rawuh", "Rangkul", "Remuk", "Rembug", "Rebut", "Rengkuh", "Tulis",
-        "Tutup", "Dolan", "Deleng", "Dandan", "Dumuk", "Lumpat", "Lungguh", "Lempit",
-        "Lebur", "Lengser", "Lereb", "Pikir", "Pilih", "Penthung", "Bakar", "Banting",
-        "Balang", "Buwang", "Waca", "Wulang", "Wales", "Wangsul"
+        "kukur", "kethok", "kurung", "kemah", "golèk", "cekel", "cukur", "cethot", "colong",
+        "jupuk", "jaluk", "jaga", "junjung", "sapu", "silih", "siram", "sebul", "yasa",
+        "yekti", "yitna", "yoga", "thuthuk", "thukul", "thèthèl", "thithil", "dhahar",
+        "dhawuh", "dhodhok", "dhéplok", "nesu", "nunut", "nalar", "niat", "rabi",
+        "rungu", "rawuh", "rangkul", "remuk", "rembug", "rebut", "rengkuh", "tulis",
+        "tutup", "dolan", "deleng", "dandan", "dumuk", "lumpat", "lungguh", "lempit",
+        "lebur", "lengser", "lereb", "pikir", "pilih", "penthung", "bakar", "banting",
+        "balang", "buwang", "waca", "wulang", "wales", "wangsul"
     ];
 
     // Master ater-ater dasar
@@ -326,7 +327,7 @@
         "pa", "pi", "kuma", "kami", "kapi", "tar", "pra", "uma", "in", "pating_paN"
     ];
 
-    // Panambang yang sudah disaring agar tidak ada duplikasi
+    // Panambang tanpa duplikasi
     const daftarPanamBase = [
         "i", "ake", "aken", "an", "en", "ana", "e", "ipun", "na", "a", "an_e"
     ];
@@ -410,9 +411,6 @@
 
         inDasar.value = kataDasar;
 
-        // Aturan Ater-ater:
-        // Sriwedari: Hanya buang tak- dan kok- (dak- dan ko- TETAP ADA)
-        // KBJ: Tampilkan SEMUA (dak-, tak-, kok-, ko-)
         let listAter = isSriwedari 
             ? daftarAterBase.filter(a => a !== 'tak' && a !== 'kok')
             : daftarAterBase;
@@ -482,7 +480,6 @@
         const currentFontSize = document.getElementById('fontSizeSlider').value + 'rem';
         const currentLineHeight = document.getElementById('lineHeightSlider').value;
 
-        // Mencegah render baris yang identik dari sisi teks Latin dan Aksara Jawa
         let seenKeys = new Set();
 
         items.forEach(item => {

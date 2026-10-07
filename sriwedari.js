@@ -194,7 +194,7 @@ function prosesParamasastra() {
     }
 
     if (errorMsg !== "") {
-        document.getElementById('paramWarningArea').innerHTML = `<div class="param-warning">⚠ WARNING PAUGERAN: ${errorMsg}</div>`;
+        document.getElementById('paramWarningArea').innerHTML = `<div class="param-warning">⚠️ WARNING PAUGERAN: ${errorMsg}</div>`;
         document.getElementById('outParamLatin').value = "";
         document.getElementById('outParamJawa').innerHTML = "";
         return;
@@ -204,7 +204,9 @@ function prosesParamasastra() {
     let prefixAppended = "";
 
     if (['N', 'm', 'n', 'ny', 'ng', 'pa'].includes(ater)) {
-        if (f === 'g') {
+        if (dasar.startsWith('ng') || dasar.startsWith('ny') || f === 'm' || f === 'n') {
+            stem = dasar;
+        } else if (f === 'g') {
             prefixAppended = 'hang';
             stem = dasar;
         } 
@@ -213,7 +215,7 @@ function prosesParamasastra() {
         else if (dasar.startsWith('th')) stem = 'n' + dasar.slice(2); 
         else if (f === 't') stem = 'n' + dasar.slice(1); 
         else if (['d','j'].includes(f) || dasar.startsWith('dh')) stem = 'n' + dasar; 
-        else if (['c','s'].includes(f) || dasar.startsWith('ny')) stem = 'ny' + dasar.slice(dasar.startsWith('ny') ? 2 : 1);
+        else if (['c','s'].includes(f)) stem = 'ny' + dasar.slice(1);
         else if (f === 'k') stem = 'ng' + dasar.slice(1);
         else if (['l','r','y'].includes(f) || isVowelStart) stem = 'ng' + dasar;
         else stem = 'ng' + dasar;
@@ -223,7 +225,9 @@ function prosesParamasastra() {
         }
     } else if (ater === 'pating_paN') {
         let nasal = '';
-        if (['p','b','w','m','f','v'].includes(f)) {
+        if (dasar.startsWith('ng') || dasar.startsWith('ny') || f === 'm' || f === 'n') {
+            nasal = '';
+        } else if (['p','b','w','m','f','v'].includes(f)) {
             nasal = 'm';
         } else if (['t','d','j','n'].includes(f) || dasar.startsWith('dh') || dasar.startsWith('th')) {
             nasal = 'n';
@@ -655,7 +659,7 @@ function transliterasiKata(rawLatin) {
         let isSwara = false;
         let isMurda = false;
 
-        let c3_raw = i+2 < latin.length ? latin.substring(i, i+3) : ""; // <-- KOREKSI DI SINI
+        let c3_raw = i+2 < latin.length ? latin.substring(i, i+3) : ""; 
         let c2_raw = i+1 < latin.length ? latin.substring(i, i+2) : "";
         let c1_raw = latin[i];
 

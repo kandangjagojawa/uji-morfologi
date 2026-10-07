@@ -119,7 +119,19 @@ function prosesParamasastra() {
     let altPrefixAppended = "";
 
     if (['N', 'm', 'n', 'ny', 'ng', 'pa'].includes(ater)) {
-        if (['d','j'].includes(f) || dasar.startsWith('dh')) {
+        if (dasar.startsWith('ng')) {
+            stem = dasar;
+            altPrefixAppended = 'ha';
+        } else if (dasar.startsWith('ny')) {
+            stem = dasar;
+            altPrefixAppended = 'ha';
+        } else if (f === 'n') {
+            stem = dasar;
+            altPrefixAppended = 'ha';
+        } else if (f === 'm') {
+            stem = dasar;
+            altPrefixAppended = 'ha';
+        } else if (['d','j'].includes(f) || dasar.startsWith('dh')) {
             if (f === 'j') {
                 prefixAppended = 'han';
                 altPrefixAppended = 'hany';
@@ -147,8 +159,8 @@ function prosesParamasastra() {
             stem = 'n' + dasar.slice(1);
             altPrefixAppended = 'ha';
         }
-        else if (['c','s'].includes(f) || dasar.startsWith('ny')) {
-            stem = 'ny' + dasar.slice(dasar.startsWith('ny') ? 2 : 1);
+        else if (['c','s'].includes(f)) {
+            stem = 'ny' + dasar.slice(1);
             altPrefixAppended = 'ha';
         }
         else if (f === 'k') {

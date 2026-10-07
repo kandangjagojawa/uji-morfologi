@@ -329,21 +329,25 @@
     function formatLatinForUI(text) {
         if (!text) return "";
 
-        // Fungsi pembantu untuk memproses satu kata tunggal
         function cleanWord(str) {
-            // 1. Menghilangkan pola konsonan ganda akibat panambang (misal: -nnan -> -nan, -nnanné -> -nané, -kké -> -ké)
-            let s = str.replace(/-([a-zA-Z])\1+/g, '-$1');
+            let s = str;
             
-            // 2. Menghilangkan konsonan ganda pada perbatasan kata dasar & panambang (misal: pikir-ran -> pikir-an)
+            // 1. Penanganan khusus panambang -an+e (-anné / -nnané) -> disederhanakan menjadi -ané / -nané
+            s = s.replace(/nnanné/g, 'nané');
+            s = s.replace(/anné/g, 'ané');
+
+            // 2. Menghilangkan pola konsonan ganda akibat panambang lainnya (misal: -nnan -> -nan, -nni -> -ni, -kké -> -ké)
+            s = s.replace(/-([a-zA-Z])\1+/g, '-$1');
+            
+            // 3. Menghilangkan konsonan ganda pada perbatasan kata dasar & panambang (misal: pikir-ran -> pikir-an)
             s = s.replace(/([a-zA-Z])-\1+/gi, '$1-');
 
-            // 3. Hapus tanda hubung
+            // 4. Hapus tanda hubung sisa
             s = s.replace(/-/g, '');
 
             return s;
         }
 
-        // Jika terdapat opsi alternatif dalam tanda kurung, proses masing-masing bagian secara terpisah
         return text.replace(/([^\s()]+)/g, function(match) {
             return cleanWord(match);
         });

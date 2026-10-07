@@ -304,7 +304,6 @@
 </script>
 
 <script>
-    // Kategori kata dasar (semua huruf kecil & 'Maca' diganti 'waca')
     const kataVokal = [
         "waca", "lunga", "teka", "gawa", "tangi", "bali", "lali", "mari", "tuku", "mlaku",
         "turu", "guyu", "gawé", "saré", "pépé", "dhédhé", "anggo", "aso", "plongo", "lokro"
@@ -321,16 +320,29 @@
         "balang", "buwang", "waca", "wulang", "wales", "wangsul"
     ];
 
-    // Master ater-ater dasar
     const daftarAterBase = [
         "N", "dak", "tak", "kok", "ko", "di", "ka", "ke", "sa", 
         "pa", "pi", "kuma", "kami", "kapi", "tar", "pra", "uma", "in", "pating_paN"
     ];
 
-    // Panambang tanpa duplikasi
     const daftarPanamBase = [
         "i", "ake", "aken", "an", "en", "ana", "e", "ipun", "na", "a", "an_e"
     ];
+
+    // Fungsi khusus untuk membersihkan tampilan Latin khusus di UI (Tanpa Mengubah Engine Engine)
+    function formatLatinForUI(text) {
+        if (!text) return "";
+        let formatted = text.replace(/-/g, ''); // Hapus tanda hubung
+        
+        // Hapus konsonan ganda (misal: nni -> ni, kkn -> kn, dll.)
+        // Menangani konsonan ganda 2 karakter seperti dh, th, ny, ng
+        formatted = formatted.replace(/(dh|th|ny|ng)\1+/gi, '$1');
+        
+        // Menangani konsonan ganda tunggal (misal: nn, kk, ll, pp, dll)
+        formatted = formatted.replace(/([bcdfghjklmnpqrstvwxyz])\1+/gi, '$1');
+
+        return formatted;
+    }
 
     function ubahUkuranFont() {
         let val = document.getElementById('fontSizeSlider').value;
@@ -429,14 +441,17 @@
 
             if (!warning && latinResult) {
                 return {
-                    latin: latinResult,
+                    latinRaw: latinResult, // Disimpan utuh untuk kebutuhan engine transliterasi
+                    latinDisplay: formatLatinForUI(latinResult), // Khusus tampilan UI
                     jawa: jawaResult,
                     ater: ater,
                     panam: panam
                 };
             } else if (warning) {
+                let rawErr = `${ater ? ater + '-' : ''}${kataDasar}${panam ? '-' + panam : ''}`;
                 return {
-                    latin: `${ater ? ater + '-' : ''}${kataDasar}${panam ? '-' + panam : ''}`,
+                    latinRaw: rawErr,
+                    latinDisplay: formatLatinForUI(rawErr),
                     jawa: "-",
                     warning: warning,
                     ater: ater,
@@ -483,14 +498,16 @@
         let seenKeys = new Set();
 
         items.forEach(item => {
-            let key = `${item.latin}|${item.jawa}`;
+            // Unik berdasarkan latinDisplay dan aksara Jawanya
+            let key = `${item.latinDisplay}|${item.jawa}`;
             if (seenKeys.has(key)) return;
             seenKeys.add(key);
 
             let tr = document.createElement('tr');
             
             let tdLatin = document.createElement('td');
-            tdLatin.innerText = item.latin;
+            tdLatin.innerText = item.latinDisplay; // Tampilan bersih di UI tanpa - dan konsonan ganda
+            
             if (item.warning) {
                 let wBadge = document.createElement('div');
                 wBadge.className = 'badge-warning';

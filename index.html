@@ -329,18 +329,15 @@
         "i", "ake", "aken", "an", "en", "ana", "e", "ipun", "na", "a", "an_e"
     ];
 
-    // Format tampilan Latin untuk UI
+    // Format Tampilan UI dengan Preservasi Opsi Alternatif Dalam Kurung
     function formatLatinForUI(text) {
         if (!text) return "";
 
-        // 1. Bersihkan konsonan ganda buatan yang dipicu oleh tanda hubung (misal: pikir-ran -> pikirran -> pikiran)
+        // 1. Bersihkan konsonan ganda buatan akibat tanda hubung (misal: pikir-ran -> pikiran)
         let cleaned = text.replace(/([a-zA-Z])-\1+/gi, '$1');
 
-        // 2. Hilangkan tanda hubung sisa
+        // 2. Hapus semua tanda hubung tanpa menghilangkan frasa opsional dalam kurung
         cleaned = cleaned.replace(/-/g, '');
-
-        // Catatan: Konsonan ganda alami hasil morfologi (seperti 'ngg' pada 'hanggawa', 'nn' pada 'nnan', dll.)
-        // akan tetap utuh dan tampil secara alami di UI.
 
         return cleaned;
     }

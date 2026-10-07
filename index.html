@@ -329,19 +329,20 @@
         "i", "ake", "aken", "an", "en", "ana", "e", "ipun", "na", "a", "an_e"
     ];
 
-    // Fungsi khusus untuk membersihkan tampilan Latin khusus di UI (Tanpa Mengubah Engine Engine)
+    // Format tampilan Latin untuk UI
     function formatLatinForUI(text) {
         if (!text) return "";
-        let formatted = text.replace(/-/g, ''); // Hapus tanda hubung
-        
-        // Hapus konsonan ganda (misal: nni -> ni, kkn -> kn, dll.)
-        // Menangani konsonan ganda 2 karakter seperti dh, th, ny, ng
-        formatted = formatted.replace(/(dh|th|ny|ng)\1+/gi, '$1');
-        
-        // Menangani konsonan ganda tunggal (misal: nn, kk, ll, pp, dll)
-        formatted = formatted.replace(/([bcdfghjklmnpqrstvwxyz])\1+/gi, '$1');
 
-        return formatted;
+        // 1. Bersihkan konsonan ganda buatan yang dipicu oleh tanda hubung (misal: pikir-ran -> pikirran -> pikiran)
+        let cleaned = text.replace(/([a-zA-Z])-\1+/gi, '$1');
+
+        // 2. Hilangkan tanda hubung sisa
+        cleaned = cleaned.replace(/-/g, '');
+
+        // Catatan: Konsonan ganda alami hasil morfologi (seperti 'ngg' pada 'hanggawa', 'nn' pada 'nnan', dll.)
+        // akan tetap utuh dan tampil secara alami di UI.
+
+        return cleaned;
     }
 
     function ubahUkuranFont() {
@@ -441,8 +442,8 @@
 
             if (!warning && latinResult) {
                 return {
-                    latinRaw: latinResult, // Disimpan utuh untuk kebutuhan engine transliterasi
-                    latinDisplay: formatLatinForUI(latinResult), // Khusus tampilan UI
+                    latinRaw: latinResult,
+                    latinDisplay: formatLatinForUI(latinResult),
                     jawa: jawaResult,
                     ater: ater,
                     panam: panam
@@ -498,7 +499,6 @@
         let seenKeys = new Set();
 
         items.forEach(item => {
-            // Unik berdasarkan latinDisplay dan aksara Jawanya
             let key = `${item.latinDisplay}|${item.jawa}`;
             if (seenKeys.has(key)) return;
             seenKeys.add(key);
@@ -506,7 +506,7 @@
             let tr = document.createElement('tr');
             
             let tdLatin = document.createElement('td');
-            tdLatin.innerText = item.latinDisplay; // Tampilan bersih di UI tanpa - dan konsonan ganda
+            tdLatin.innerText = item.latinDisplay;
             
             if (item.warning) {
                 let wBadge = document.createElement('div');

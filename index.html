@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="jw">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikasi Pengujian Affix Aksara Jawa (Sriwedari vs KBJ)</title>
+    <style>
+        @font-face {
+            font-family: 'Ngayogyakarta';
+            src: url('ngayogyann.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #2980b9;
+            --bg-color: #f8f9fa;
+            --card-bg: #ffffff;
+            --border-color: #dee2e6;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1, h2, h3 {
+            color: var(--primary-color);
+            text-align: center;
+        }
+
+        .preset-container {
+            background: var(--card-bg);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+        }
+
+        .category-title {
+            font-weight: bold;
+            font-size: 0.95rem;
+            margin: 10px 0 5px 0;
+            color: var(--accent-color);
+        }
+
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+
+        .btn-preset {
+            background-color: #e9ecef;
+            border: 1px solid #ced4da;
+            padding: 4px 10px;
+            font-size: 0.85rem;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-preset:hover {
+            background-color: var(--accent-color);
+            color: white;
+            border-color: var(--accent-color);
+        }
+
+        .input-section {
+            background: var(--card-bg);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            border: 1px solid var(--border-color);
+        }
+
+        .input-section label {
+            font-weight: bold;
+        }
+
+        .input-section input {
+            flex-grow: 1;
+            padding: 8px 12px;
+            font-size: 1rem;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+        }
+
+        .input-section button {
+            padding: 8px 20px;
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 900px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .box {
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border: 1px solid var(--border-color);
+            max-height: 700px;
+            overflow-y: auto;
+        }
+
+        .box h2 {
+            position: sticky;
+            top: -15px;
+            background: var(--card-bg);
+            padding: 10px 0;
+            margin-top: 0;
+            border-bottom: 2px solid var(--accent-color);
+            z-index: 10;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th, td {
+            padding: 8px 10px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            background-color: #f1f3f5;
+            font-size: 0.9rem;
+        }
+
+        .aksara-text {
+            font-family: 'Ngayogyakarta', 'Aksara Jawa', sans-serif;
+            font-size: 1.5rem;
+            line-height: 1.4;
+            color: #000;
+        }
+
+        .badge-warning {
+            color: #856404;
+            background-color: #fff3cd;
+            font-size: 0.75rem;
+            padding: 2px 5px;
+            border-radius: 3px;
+            display: inline-block;
+            margin-top: 2px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Pengujian Ater-ater & Panambang Aksara Jawa</h1>
+
+    <!-- Pilihan Preset Kata Dasar -->
+    <div class="preset-container">
+        <h3>Pilih Kata Dasar:</h3>
+        
+        <div class="category-title">1. Diakhiri Suku Kata Vokal Terbuka</div>
+        <div class="btn-group" id="group-vokal"></div>
+
+        <div class="category-title">2. Diawali Konsonan</div>
+        <div class="btn-group" id="group-konsonan"></div>
+    </div>
+
+    <!-- Input Manual -->
+    <div class="input-section">
+        <label for="inputKata">Kata Dasar (Latin):</label>
+        <input type="text" id="inputKata" placeholder="Masukkan kata dasar (contoh: maca, kukur)..." value="maca">
+        <button onclick="jalankanPengujian()">Uji Kombinasi</button>
+    </div>
+
+    <!-- Output Komparasi Dua Paugeran -->
+    <div class="comparison-grid">
+        <!-- Paugeran Sriwedari -->
+        <div class="box">
+            <h2>Paugeran Sriwedari (sriwedari.js)</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 45%;">Latin (Ater + Dasar + Panam)</th>
+                        <th style="width: 55%;">Aksara Jawa</th>
+                    </tr>
+                </thead>
+                <tbody id="tbody-sriwedari"></tbody>
+            </table>
+        </div>
+
+        <!-- Paugeran KBJ -->
+        <div class="box">
+            <h2>Paugeran KBJ (kbj.js)</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 45%;">Latin (Ater + Dasar + Panam)</th>
+                        <th style="width: 55%;">Aksara Jawa</th>
+                    </tr>
+                </thead>
+                <tbody id="tbody-kbj"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Load Engine Transliterasi -->
+<script src="sriwedari.js"></script>
+<script>
+    // Namespace isolate untuk Engine Sriwedari
+    const SriwedariEngine = {
+        prosesParamasastra: window.prosesParamasastra,
+        transliterasiKalimat: window.transliterasiKalimat
+    };
+</script>
+
+<script src="kbj.js"></script>
+<script>
+    // Namespace isolate untuk Engine KBJ
+    const KBJEngine = {
+        prosesParamasastra: window.prosesParamasastra,
+        transliterasiKalimat: window.transliterasiKalimat
+    };
+</script>
+
+<script>
+    // Daftar Pilihan Kata Dasar Sesuai Kategori
+    const kataVokal = [
+        "Maca", "Lunga", "Teka", "Gawa", "Tangi", "Bali", "Lali", "Mari", "Tuku", "Mlaku",
+        "Turu", "Guyu", "Gawé", "Saré", "Pépé", "Dhédhé", "Anggo", "Aso", "Plongo", "Lokro"
+    ];
+
+    const kataKonsonan = [
+        "Kukur", "Kethok", "Kurung", "Kemah", "Golèk", "Cekel", "Cukur", "Cethot", "Colong",
+        "Jupuk", "Jaluk", "Jaga", "Junjung", "Sapu", "Silih", "Siram", "Sebul", "Yasa",
+        "Yekti", "Yitna", "Yoga", "Thuthuk", "Thukul", "Thèthèl", "Thithil", "Dhahar",
+        "Dhawuh", "Dhodhok", "Dhéplok", "Nesu", "Nunut", "Nalar", "Niat", "Rabi",
+        "Rungu", "Rawuh", "Rangkul", "Remuk", "Rembug", "Rebut", "Rengkuh", "Tulis",
+        "Tutup", "Dolan", "Deleng", "Dandan", "Dumuk", "Lumpat", "Lungguh", "Lempit",
+        "Lebur", "Lengser", "Lereb", "Pikir", "Pilih", "Penthung", "Bakar", "Banting",
+        "Balang", "Buwang", "Waca", "Wulang", "Wales", "Wangsul"
+    ];
+
+    // Kombinasi Ater-ater dan Panambang yang Didukung Engine
+    const daftarAter = [
+        "", "N", "m", "n", "ny", "ng", "dak", "tak", "kok", "di", "ka", "ke", "sa", 
+        "pa", "pi", "kuma", "kami", "kapi", "tar", "pra", "uma", "in", "pating_paN"
+    ];
+
+    const daftarPanam = [
+        "", "i", "ake", "aké", "aken", "an", "en", "ana", "e", "é", "ipun", "na", "a", "an_e"
+    ];
+
+    // Inisialisasi Tombol Preset
+    function initPresets() {
+        const gVokal = document.getElementById('group-vokal');
+        const gKonsonan = document.getElementById('group-konsonan');
+
+        kataVokal.forEach(k => {
+            let btn = document.createElement('button');
+            btn.className = 'btn-preset';
+            btn.innerText = k;
+            btn.onclick = () => {
+                document.getElementById('inputKata').value = k;
+                jalankanPengujian();
+            };
+            gVokal.appendChild(btn);
+        });
+
+        kataKonsonan.forEach(k => {
+            let btn = document.createElement('button');
+            btn.className = 'btn-preset';
+            btn.innerText = k;
+            btn.onclick = () => {
+                document.getElementById('inputKata').value = k;
+                jalankanPengujian();
+            };
+            gKonsonan.appendChild(btn);
+        });
+    }
+
+    // Generator Kombinasi Paramasastra Simulasi Form
+    function generateKombinasi(engine, kataDasar) {
+        let results = [];
+        
+        // Buat mock DOM elements sementara untuk memicu prosesParamasastra engine
+        let selAter = document.getElementById('selAter') || document.createElement('select');
+        selAter.id = 'selAter';
+        let inDasar = document.getElementById('inDasar') || document.createElement('input');
+        inDasar.id = 'inDasar';
+        let selPanam = document.getElementById('selPanam') || document.createElement('select');
+        selPanam.id = 'selPanam';
+        let outParamLatin = document.getElementById('outParamLatin') || document.createElement('input');
+        outParamLatin.id = 'outParamLatin';
+        let outParamJawa = document.getElementById('outParamJawa') || document.createElement('div');
+        outParamJawa.id = 'outParamJawa';
+        let paramWarningArea = document.getElementById('paramWarningArea') || document.createElement('div');
+        paramWarningArea.id = 'paramWarningArea';
+
+        document.body.appendChild(selAter);
+        document.body.appendChild(inDasar);
+        document.body.appendChild(selPanam);
+        document.body.appendChild(outParamLatin);
+        document.body.appendChild(outParamJawa);
+        document.body.appendChild(paramWarningArea);
+
+        selAter.style.display = 'none';
+        inDasar.style.display = 'none';
+        selPanam.style.display = 'none';
+        outParamLatin.style.display = 'none';
+        outParamJawa.style.display = 'none';
+        paramWarningArea.style.display = 'none';
+
+        inDasar.value = kataDasar;
+
+        daftarAter.forEach(ater => {
+            daftarPanam.forEach(panam => {
+                // Populate option values
+                selAter.innerHTML = `<option value="${ater}">${ater}</option>`;
+                selPanam.innerHTML = `<option value="${panam}">${panam}</option>`;
+                
+                selAter.value = ater;
+                selPanam.value = panam;
+
+                // Jalankan morfologi paramasastra
+                engine.prosesParamasastra();
+
+                let warning = paramWarningArea.innerText;
+                let latinResult = outParamLatin.value;
+                let jawaResult = outParamJawa.innerText;
+
+                if (!warning && latinResult) {
+                    results.push({
+                        latin: latinResult,
+                        jawa: jawaResult,
+                        ater: ater,
+                        panam: panam
+                    });
+                } else if (warning) {
+                    // Masukkan dengan penanda warning jika tidak valid secara paugeran
+                    results.push({
+                        latin: `${ater ? ater + '-' : ''}${kataDasar}${panam ? '-' + panam : ''}`,
+                        jawa: "-",
+                        warning: warning,
+                        ater: ater,
+                        panam: panam
+                    });
+                }
+            });
+        });
+
+        return results;
+    }
+
+    function renderTable(targetId, data) {
+        const tbody = document.getElementById(targetId);
+        tbody.innerHTML = '';
+
+        data.forEach(item => {
+            let tr = document.createElement('tr');
+            
+            let tdLatin = document.createElement('td');
+            tdLatin.innerText = item.latin;
+            if (item.warning) {
+                let wBadge = document.createElement('div');
+                wBadge.className = 'badge-warning';
+                wBadge.innerText = item.warning.replace('⚠ WARNING PAUGERAN:', '').replace('⚠️ WARNING PAUGERAN KBJ:', '');
+                tdLatin.appendChild(wBadge);
+            }
+
+            let tdJawa = document.createElement('td');
+            tdJawa.className = 'aksara-text';
+            tdJawa.innerText = item.jawa;
+
+            tr.appendChild(tdLatin);
+            tr.appendChild(tdJawa);
+            tbody.appendChild(tr);
+        });
+    }
+
+    function jalankanPengujian() {
+        const kata = document.getElementById('inputKata').value.trim();
+        if (!kata) return;
+
+        // Render untuk Sriwedari
+        const resSriwedari = generateKombinasi(SriwedariEngine, kata);
+        renderTable('tbody-sriwedari', resSriwedari);
+
+        // Render untuk KBJ
+        const resKBJ = generateKombinasi(KBJEngine, kata);
+        renderTable('tbody-kbj', resKBJ);
+    }
+
+    // Inisialisasi Awal
+    window.onload = () => {
+        initPresets();
+        jalankanPengujian();
+    };
+</script>
+
+</body>
+</html>

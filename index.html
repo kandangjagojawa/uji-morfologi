@@ -320,14 +320,15 @@
         "Balang", "Buwang", "Waca", "Wulang", "Wales", "Wangsul"
     ];
 
-    // N-Anuswara otomatis disisa 'N' (m, n, ny, ng dihapus dari opsi manual)
+    // Master ater-ater dasar
     const daftarAterBase = [
-        "N", "dak", "tak", "kok", "di", "ka", "ke", "sa", 
+        "N", "dak", "tak", "kok", "ko", "di", "ka", "ke", "sa", 
         "pa", "pi", "kuma", "kami", "kapi", "tar", "pra", "uma", "in", "pating_paN"
     ];
 
+    // Panambang yang sudah disaring agar tidak ada duplikasi
     const daftarPanamBase = [
-        "i", "ake", "aké", "aken", "an", "en", "ana", "e", "é", "ipun", "na", "a", "an_e"
+        "i", "ake", "aken", "an", "en", "ana", "e", "ipun", "na", "a", "an_e"
     ];
 
     function ubahUkuranFont() {
@@ -409,7 +410,9 @@
 
         inDasar.value = kataDasar;
 
-        // Khusus Sriwedari: Hilangkan tak- dan kok-
+        // Aturan Ater-ater:
+        // Sriwedari: Hanya buang tak- dan kok- (dak- dan ko- TETAP ADA)
+        // KBJ: Tampilkan SEMUA (dak-, tak-, kok-, ko-)
         let listAter = isSriwedari 
             ? daftarAterBase.filter(a => a !== 'tak' && a !== 'kok')
             : daftarAterBase;
@@ -479,7 +482,14 @@
         const currentFontSize = document.getElementById('fontSizeSlider').value + 'rem';
         const currentLineHeight = document.getElementById('lineHeightSlider').value;
 
+        // Mencegah render baris yang identik dari sisi teks Latin dan Aksara Jawa
+        let seenKeys = new Set();
+
         items.forEach(item => {
+            let key = `${item.latin}|${item.jawa}`;
+            if (seenKeys.has(key)) return;
+            seenKeys.add(key);
+
             let tr = document.createElement('tr');
             
             let tdLatin = document.createElement('td');

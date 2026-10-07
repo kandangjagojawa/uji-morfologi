@@ -214,14 +214,28 @@
             padding: 6px 10px;
             border-top: 2px solid #cbd5e1;
         }
+
+        #loadingOverlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            z-index: 9999;
+            color: var(--primary-color);
+        }
     </style>
 </head>
 <body>
 
+<div id="loadingOverlay">Memuat Engine Translasi (Sandboxing)...</div>
+
 <div class="container">
     <h1>Pengujian Ater-ater & Panambang Aksara Jawa</h1>
 
-    <!-- Pilihan Preset Kata Dasar -->
     <div class="preset-container">
         <h3>Pilih Kata Dasar:</h3>
         
@@ -232,7 +246,6 @@
         <div class="btn-group" id="group-konsonan"></div>
     </div>
 
-    <!-- Input Manual & Slider Kontrol -->
     <div class="input-section">
         <div class="input-row">
             <label for="inputKata">Kata Dasar (Latin):</label>
@@ -254,9 +267,7 @@
         </div>
     </div>
 
-    <!-- Output Komparasi Dua Paugeran -->
     <div class="comparison-grid">
-        <!-- Paugeran Sriwedari -->
         <div class="box">
             <h2>Paugeran Sriwedari (sriwedari.js)</h2>
             <table>
@@ -270,7 +281,6 @@
             </table>
         </div>
 
-        <!-- Paugeran KBJ -->
         <div class="box">
             <h2>Paugeran KBJ (kbj.js)</h2>
             <table>
@@ -286,24 +296,11 @@
     </div>
 </div>
 
-<!-- Load Engine Transliterasi -->
-<script src="sriwedari.js"></script>
 <script>
-    const SriwedariEngine = {
-        prosesParamasastra: window.prosesParamasastra,
-        transliterasiKalimat: window.transliterasiKalimat
-    };
-</script>
+    // Engine terisolasi
+    let SriwedariEngine = null;
+    let KBJEngine = null;
 
-<script src="kbj.js"></script>
-<script>
-    const KBJEngine = {
-        prosesParamasastra: window.prosesParamasastra,
-        transliterasiKalimat: window.transliterasiKalimat
-    };
-</script>
-
-<script>
     const kataVokal = [
         "waca", "lunga", "teka", "gawa", "tangi", "bali", "lali", "mari", "tuku", "mlaku",
         "turu", "guyu", "gawé", "saré", "pépé", "dhédhé", "anggo", "aso", "plongo", "lokro"
@@ -329,14 +326,15 @@
         "i", "ake", "aken", "an", "en", "ana", "e", "ipun", "na", "a", "an_e"
     ];
 
-    // Format Tampilan UI dengan Preservasi Opsi Alternatif Dalam Kurung
+    // Format UI: Menghilangkan tanda hubung dan konsonan ganda buatan, 
+    // tetapi mempertahankan teks di dalam kurung dan anuswara alami.
     function formatLatinForUI(text) {
         if (!text) return "";
-
-        // 1. Bersihkan konsonan ganda buatan akibat tanda hubung (misal: pikir-ran -> pikiran)
-        let cleaned = text.replace(/([a-zA-Z])-\1+/gi, '$1');
-
-        // 2. Hapus semua tanda hubung tanpa menghilangkan frasa opsional dalam kurung
+        
+        // Menghapus konsonan ganda akibat imbuhan yang dipisahkan tanda hubung (misal: pikir-ran -> pikir-an)
+        let cleaned = text.replace(/([a-zA-Z])-\1+/gi, '$1-');
+        
+        // Menghapus semua tanda hubung. Teks dalam kurung () tetap aman.
         cleaned = cleaned.replace(/-/g, '');
 
         return cleaned;
@@ -386,44 +384,24 @@
     }
 
     function generateKombinasi(engine, kataDasar, isSriwedari) {
-        let results = {
-            aterOnly: [],
-            panamOnly: [],
-            combination: []
-        };
+        let results = { aterOnly: [], panamOnly: [], combination: [] };
         
-        let selAter = document.getElementById('selAter') || document.createElement('select');
-        selAter.id = 'selAter';
-        let inDasar = document.getElementById('inDasar') || document.createElement('input');
-        inDasar.id = 'inDasar';
-        let selPanam = document.getElementById('selPanam') || document.createElement('select');
-        selPanam.id = 'selPanam';
-        let outParamLatin = document.getElementById('outParamLatin') || document.createElement('input');
-        outParamLatin.id = 'outParamLatin';
-        let outParamJawa = document.getElementById('outParamJawa') || document.createElement('div');
-        outParamJawa.id = 'outParamJawa';
-        let paramWarningArea = document.getElementById('paramWarningArea') || document.createElement('div');
-        paramWarningArea.id = 'paramWarningArea';
+        let selAter = document.getElementById('selAter') || document.createElement('select'); selAter.id = 'selAter';
+        let inDasar = document.getElementById('inDasar') || document.createElement('input'); inDasar.id = 'inDasar';
+        let selPanam = document.getElementById('selPanam') || document.createElement('select'); selPanam.id = 'selPanam';
+        let outParamLatin = document.getElementById('outParamLatin') || document.createElement('input'); outParamLatin.id = 'outParamLatin';
+        let outParamJawa = document.getElementById('outParamJawa') || document.createElement('div'); outParamJawa.id = 'outParamJawa';
+        let paramWarningArea = document.getElementById('paramWarningArea') || document.createElement('div'); paramWarningArea.id = 'paramWarningArea';
 
-        document.body.appendChild(selAter);
-        document.body.appendChild(inDasar);
-        document.body.appendChild(selPanam);
-        document.body.appendChild(outParamLatin);
-        document.body.appendChild(outParamJawa);
-        document.body.appendChild(paramWarningArea);
+        document.body.appendChild(selAter); document.body.appendChild(inDasar); document.body.appendChild(selPanam);
+        document.body.appendChild(outParamLatin); document.body.appendChild(outParamJawa); document.body.appendChild(paramWarningArea);
 
-        selAter.style.display = 'none';
-        inDasar.style.display = 'none';
-        selPanam.style.display = 'none';
-        outParamLatin.style.display = 'none';
-        outParamJawa.style.display = 'none';
-        paramWarningArea.style.display = 'none';
+        selAter.style.display = 'none'; inDasar.style.display = 'none'; selPanam.style.display = 'none';
+        outParamLatin.style.display = 'none'; outParamJawa.style.display = 'none'; paramWarningArea.style.display = 'none';
 
         inDasar.value = kataDasar;
 
-        let listAter = isSriwedari 
-            ? daftarAterBase.filter(a => a !== 'tak' && a !== 'kok')
-            : daftarAterBase;
+        let listAter = isSriwedari ? daftarAterBase.filter(a => a !== 'tak' && a !== 'kok') : daftarAterBase;
 
         function runSingle(ater, panam) {
             selAter.innerHTML = `<option value="${ater}">${ater}</option>`;
@@ -439,7 +417,6 @@
 
             if (!warning && latinResult) {
                 return {
-                    latinRaw: latinResult,
                     latinDisplay: formatLatinForUI(latinResult),
                     jawa: jawaResult,
                     ater: ater,
@@ -448,7 +425,6 @@
             } else if (warning) {
                 let rawErr = `${ater ? ater + '-' : ''}${kataDasar}${panam ? '-' + panam : ''}`;
                 return {
-                    latinRaw: rawErr,
                     latinDisplay: formatLatinForUI(rawErr),
                     jawa: "-",
                     warning: warning,
@@ -459,19 +435,16 @@
             return null;
         }
 
-        // 1. Ater-ater + Kata Dasar
         listAter.forEach(ater => {
             let item = runSingle(ater, "");
             if (item) results.aterOnly.push(item);
         });
 
-        // 2. Kata Dasar + Panambang
         daftarPanamBase.forEach(panam => {
             let item = runSingle("", panam);
             if (item) results.panamOnly.push(item);
         });
 
-        // 3. Kombinasi Ater-ater + Kata Dasar + Panambang
         listAter.forEach(ater => {
             daftarPanamBase.forEach(panam => {
                 let item = runSingle(ater, panam);
@@ -527,29 +500,44 @@
     function renderTable(targetId, dataGroup) {
         const tbody = document.getElementById(targetId);
         tbody.innerHTML = '';
-
         renderTableSection(tbody, "1. Ater-ater + Kata Dasar", dataGroup.aterOnly);
         renderTableSection(tbody, "2. Kata Dasar + Panambang", dataGroup.panamOnly);
         renderTableSection(tbody, "3. Kombinasi (Ater-ater + Kata Dasar + Panambang)", dataGroup.combination);
     }
 
     function jalankanPengujian() {
+        if (!SriwedariEngine || !KBJEngine) return;
         const kata = document.getElementById('inputKata').value.trim();
         if (!kata) return;
 
-        // Render untuk Sriwedari (isSriwedari = true)
         const resSriwedari = generateKombinasi(SriwedariEngine, kata, true);
         renderTable('tbody-sriwedari', resSriwedari);
 
-        // Render untuk KBJ (isSriwedari = false)
         const resKBJ = generateKombinasi(KBJEngine, kata, false);
         renderTable('tbody-kbj', resKBJ);
     }
 
-    window.onload = () => {
-        initPresets();
-        jalankanPengujian();
-    };
+    // Inisialisasi Isolasi Engine via Fetch API (Sandboxing agar tidak bentrok)
+    async function initAplikasi() {
+        try {
+            const resSri = await fetch('sriwedari.js');
+            const codeSri = await resSri.text();
+            SriwedariEngine = new Function(codeSri + '\nreturn { prosesParamasastra, transliterasiKalimat };')();
+
+            const resKbj = await fetch('kbj.js');
+            const codeKbj = await resKbj.text();
+            KBJEngine = new Function(codeKbj + '\nreturn { prosesParamasastra, transliterasiKalimat };')();
+
+            document.getElementById('loadingOverlay').style.display = 'none';
+            initPresets();
+            jalankanPengujian();
+        } catch (e) {
+            console.error(e);
+            alert("Gagal memuat file script. Pastikan aplikasi dijalankan di server lokal atau GitHub Pages.");
+        }
+    }
+
+    window.onload = initAplikasi;
 </script>
 
 </body>

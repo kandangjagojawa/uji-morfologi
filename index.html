@@ -82,17 +82,21 @@
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
             margin-bottom: 20px;
-            display: flex;
-            gap: 10px;
-            align-items: center;
             border: 1px solid var(--border-color);
         }
 
-        .input-section label {
+        .input-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .input-row label {
             font-weight: bold;
         }
 
-        .input-section input {
+        .input-row input[type="text"] {
             flex-grow: 1;
             padding: 8px 12px;
             font-size: 1rem;
@@ -100,7 +104,7 @@
             border-radius: 4px;
         }
 
-        .input-section button {
+        .input-row button {
             padding: 8px 20px;
             background-color: var(--accent-color);
             color: white;
@@ -108,6 +112,27 @@
             border-radius: 4px;
             cursor: pointer;
             font-weight: bold;
+        }
+
+        .controls-row {
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+            background: #f1f3f5;
+            padding: 10px 15px;
+            border-radius: 6px;
+            align-items: center;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .control-group label {
+            font-size: 0.88rem;
+            font-weight: 600;
         }
 
         .comparison-grid {
@@ -175,6 +200,20 @@
             display: inline-block;
             margin-top: 2px;
         }
+
+        .section-header-row {
+            background-color: #e2e8f0;
+            font-weight: bold;
+            color: var(--primary-color);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .section-header-row td {
+            padding: 6px 10px;
+            border-top: 2px solid #cbd5e1;
+        }
     </style>
 </head>
 <body>
@@ -193,11 +232,26 @@
         <div class="btn-group" id="group-konsonan"></div>
     </div>
 
-    <!-- Input Manual -->
+    <!-- Input Manual & Slider Kontrol -->
     <div class="input-section">
-        <label for="inputKata">Kata Dasar (Latin):</label>
-        <input type="text" id="inputKata" placeholder="Masukkan kata dasar (contoh: maca, kukur)..." value="maca">
-        <button onclick="jalankanPengujian()">Uji Kombinasi</button>
+        <div class="input-row">
+            <label for="inputKata">Kata Dasar (Latin):</label>
+            <input type="text" id="inputKata" placeholder="Masukkan kata dasar (contoh: maca, kukur)..." value="maca">
+            <button onclick="jalankanPengujian()">Uji Kombinasi</button>
+        </div>
+
+        <div class="controls-row">
+            <div class="control-group">
+                <label for="fontSizeSlider">Ukuran Font Aksara Jawa:</label>
+                <input type="range" id="fontSizeSlider" min="1" max="3" step="0.1" value="1.5" oninput="ubahUkuranFont()">
+                <span id="fontSizeVal">1.5rem</span>
+            </div>
+            <div class="control-group">
+                <label for="lineHeightSlider">Spasi Vertikal (Line Height):</label>
+                <input type="range" id="lineHeightSlider" min="1" max="2.5" step="0.1" value="1.4" oninput="ubahJarakBaris()">
+                <span id="lineHeightVal">1.4</span>
+            </div>
+        </div>
     </div>
 
     <!-- Output Komparasi Dua Paugeran -->
@@ -235,7 +289,6 @@
 <!-- Load Engine Transliterasi -->
 <script src="sriwedari.js"></script>
 <script>
-    // Namespace isolate untuk Engine Sriwedari
     const SriwedariEngine = {
         prosesParamasastra: window.prosesParamasastra,
         transliterasiKalimat: window.transliterasiKalimat
@@ -244,7 +297,6 @@
 
 <script src="kbj.js"></script>
 <script>
-    // Namespace isolate untuk Engine KBJ
     const KBJEngine = {
         prosesParamasastra: window.prosesParamasastra,
         transliterasiKalimat: window.transliterasiKalimat
@@ -252,7 +304,6 @@
 </script>
 
 <script>
-    // Daftar Pilihan Kata Dasar Sesuai Kategori
     const kataVokal = [
         "Maca", "Lunga", "Teka", "Gawa", "Tangi", "Bali", "Lali", "Mari", "Tuku", "Mlaku",
         "Turu", "Guyu", "Gawé", "Saré", "Pépé", "Dhédhé", "Anggo", "Aso", "Plongo", "Lokro"
@@ -269,17 +320,32 @@
         "Balang", "Buwang", "Waca", "Wulang", "Wales", "Wangsul"
     ];
 
-    // Kombinasi Ater-ater dan Panambang yang Didukung Engine
-    const daftarAter = [
-        "", "N", "m", "n", "ny", "ng", "dak", "tak", "kok", "di", "ka", "ke", "sa", 
+    // N-Anuswara otomatis disisa 'N' (m, n, ny, ng dihapus dari opsi manual)
+    const daftarAterBase = [
+        "N", "dak", "tak", "kok", "di", "ka", "ke", "sa", 
         "pa", "pi", "kuma", "kami", "kapi", "tar", "pra", "uma", "in", "pating_paN"
     ];
 
-    const daftarPanam = [
-        "", "i", "ake", "aké", "aken", "an", "en", "ana", "e", "é", "ipun", "na", "a", "an_e"
+    const daftarPanamBase = [
+        "i", "ake", "aké", "aken", "an", "en", "ana", "e", "é", "ipun", "na", "a", "an_e"
     ];
 
-    // Inisialisasi Tombol Preset
+    function ubahUkuranFont() {
+        let val = document.getElementById('fontSizeSlider').value;
+        document.getElementById('fontSizeVal').innerText = val + 'rem';
+        document.querySelectorAll('.aksara-text').forEach(el => {
+            el.style.fontSize = val + 'rem';
+        });
+    }
+
+    function ubahJarakBaris() {
+        let val = document.getElementById('lineHeightSlider').value;
+        document.getElementById('lineHeightVal').innerText = val;
+        document.querySelectorAll('.aksara-text').forEach(el => {
+            el.style.lineHeight = val;
+        });
+    }
+
     function initPresets() {
         const gVokal = document.getElementById('group-vokal');
         const gKonsonan = document.getElementById('group-konsonan');
@@ -307,11 +373,13 @@
         });
     }
 
-    // Generator Kombinasi Paramasastra Simulasi Form
-    function generateKombinasi(engine, kataDasar) {
-        let results = [];
+    function generateKombinasi(engine, kataDasar, isSriwedari) {
+        let results = {
+            aterOnly: [],
+            panamOnly: [],
+            combination: []
+        };
         
-        // Buat mock DOM elements sementara untuk memicu prosesParamasastra engine
         let selAter = document.getElementById('selAter') || document.createElement('select');
         selAter.id = 'selAter';
         let inDasar = document.getElementById('inDasar') || document.createElement('input');
@@ -341,50 +409,77 @@
 
         inDasar.value = kataDasar;
 
-        daftarAter.forEach(ater => {
-            daftarPanam.forEach(panam => {
-                // Populate option values
-                selAter.innerHTML = `<option value="${ater}">${ater}</option>`;
-                selPanam.innerHTML = `<option value="${panam}">${panam}</option>`;
-                
-                selAter.value = ater;
-                selPanam.value = panam;
+        // Khusus Sriwedari: Hilangkan tak- dan kok-
+        let listAter = isSriwedari 
+            ? daftarAterBase.filter(a => a !== 'tak' && a !== 'kok')
+            : daftarAterBase;
 
-                // Jalankan morfologi paramasastra
-                engine.prosesParamasastra();
+        function runSingle(ater, panam) {
+            selAter.innerHTML = `<option value="${ater}">${ater}</option>`;
+            selPanam.innerHTML = `<option value="${panam}">${panam}</option>`;
+            selAter.value = ater;
+            selPanam.value = panam;
 
-                let warning = paramWarningArea.innerText;
-                let latinResult = outParamLatin.value;
-                let jawaResult = outParamJawa.innerText;
+            engine.prosesParamasastra();
 
-                if (!warning && latinResult) {
-                    results.push({
-                        latin: latinResult,
-                        jawa: jawaResult,
-                        ater: ater,
-                        panam: panam
-                    });
-                } else if (warning) {
-                    // Masukkan dengan penanda warning jika tidak valid secara paugeran
-                    results.push({
-                        latin: `${ater ? ater + '-' : ''}${kataDasar}${panam ? '-' + panam : ''}`,
-                        jawa: "-",
-                        warning: warning,
-                        ater: ater,
-                        panam: panam
-                    });
-                }
+            let warning = paramWarningArea.innerText;
+            let latinResult = outParamLatin.value;
+            let jawaResult = outParamJawa.innerText;
+
+            if (!warning && latinResult) {
+                return {
+                    latin: latinResult,
+                    jawa: jawaResult,
+                    ater: ater,
+                    panam: panam
+                };
+            } else if (warning) {
+                return {
+                    latin: `${ater ? ater + '-' : ''}${kataDasar}${panam ? '-' + panam : ''}`,
+                    jawa: "-",
+                    warning: warning,
+                    ater: ater,
+                    panam: panam
+                };
+            }
+            return null;
+        }
+
+        // 1. Ater-ater + Kata Dasar
+        listAter.forEach(ater => {
+            let item = runSingle(ater, "");
+            if (item) results.aterOnly.push(item);
+        });
+
+        // 2. Kata Dasar + Panambang
+        daftarPanamBase.forEach(panam => {
+            let item = runSingle("", panam);
+            if (item) results.panamOnly.push(item);
+        });
+
+        // 3. Kombinasi Ater-ater + Kata Dasar + Panambang
+        listAter.forEach(ater => {
+            daftarPanamBase.forEach(panam => {
+                let item = runSingle(ater, panam);
+                if (item) results.combination.push(item);
             });
         });
 
         return results;
     }
 
-    function renderTable(targetId, data) {
-        const tbody = document.getElementById(targetId);
-        tbody.innerHTML = '';
+    function renderTableSection(tbody, title, items) {
+        if (!items || items.length === 0) return;
 
-        data.forEach(item => {
+        let headerTr = document.createElement('tr');
+        headerTr.className = 'section-header-row';
+        headerTr.innerHTML = `<td colspan="2">${title}</td>`;
+        tbody.appendChild(headerTr);
+
+        const currentFontSize = document.getElementById('fontSizeSlider').value + 'rem';
+        const currentLineHeight = document.getElementById('lineHeightSlider').value;
+
+        items.forEach(item => {
             let tr = document.createElement('tr');
             
             let tdLatin = document.createElement('td');
@@ -398,6 +493,8 @@
 
             let tdJawa = document.createElement('td');
             tdJawa.className = 'aksara-text';
+            tdJawa.style.fontSize = currentFontSize;
+            tdJawa.style.lineHeight = currentLineHeight;
             tdJawa.innerText = item.jawa;
 
             tr.appendChild(tdLatin);
@@ -406,20 +503,28 @@
         });
     }
 
+    function renderTable(targetId, dataGroup) {
+        const tbody = document.getElementById(targetId);
+        tbody.innerHTML = '';
+
+        renderTableSection(tbody, "1. Ater-ater + Kata Dasar", dataGroup.aterOnly);
+        renderTableSection(tbody, "2. Kata Dasar + Panambang", dataGroup.panamOnly);
+        renderTableSection(tbody, "3. Kombinasi (Ater-ater + Kata Dasar + Panambang)", dataGroup.combination);
+    }
+
     function jalankanPengujian() {
         const kata = document.getElementById('inputKata').value.trim();
         if (!kata) return;
 
-        // Render untuk Sriwedari
-        const resSriwedari = generateKombinasi(SriwedariEngine, kata);
+        // Render untuk Sriwedari (isSriwedari = true)
+        const resSriwedari = generateKombinasi(SriwedariEngine, kata, true);
         renderTable('tbody-sriwedari', resSriwedari);
 
-        // Render untuk KBJ
-        const resKBJ = generateKombinasi(KBJEngine, kata);
+        // Render untuk KBJ (isSriwedari = false)
+        const resKBJ = generateKombinasi(KBJEngine, kata, false);
         renderTable('tbody-kbj', resKBJ);
     }
 
-    // Inisialisasi Awal
     window.onload = () => {
         initPresets();
         jalankanPengujian();

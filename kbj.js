@@ -1,3 +1,8 @@
+/**
+ * kbj.js
+ * Modul Transliterasi Latin ke Aksara Jawa Paugeran KBJ
+ */
+
 const KAMUS_AKSARA = {
     'h':'ꦲ', 'n':'ꦤ', 'c':'ꦕ', 'r':'ꦫ', 'k':'ꦏ',
     'd':'ꦢ', 't':'ꦠ', 's':'ꦱ', 'w':'ꦮ', 'l':'ꦭ',
@@ -5,6 +10,7 @@ const KAMUS_AKSARA = {
     'm':'ꦩ', 'g':'ꦒ', 'b':'ꦧ', 'th':'ꦛ', 'ng':'ꦔ', 'nx':'ꦔ',
     'f':'ꦥ꦳', 'v':'ꦮ꦳', 'z':'ꦗ꦳',
     'kh':'ꦏ꦳', 'dz':'ꦢ꦳', 'gh':'ꦒ꦳',
+    'sy':'ꦯ', 'sh':'ꦰ',
     'kx':'ꦏ', 'rx':'ꦫ', 'hx':'ꦲ', 'ngx':'ꦔ'
 };
 
@@ -14,7 +20,7 @@ const AKSARA_MURDA = {
 };
 
 const SWARA_MAP = {
-    'A':'ꦄ', 'I':'ꦆ', 'U':'ꦈ', 'E':'ꦌ', 'É':'ꦌ', 'È':'ꦌ', 'Ê':'ꦌ', 'O':'ꦎ'
+    'A':'ꦄ', 'I':'ꦆ', 'U':'ꦈ', 'E':'ꦄꦼ', 'É':'ꦌ', 'È':'ꦌ', 'Ê':'ꦄꦼ', 'O':'ꦎ'
 };
 
 const ANGKA = ['꧐','꧑','꧒','꧓','꧔','꧕','꧖','꧗','꧘','꧙'];
@@ -78,7 +84,6 @@ function updateParamFromManualInput() {
     document.getElementById('outParamJawa').innerText = transliterasiKalimat(val);
 }
 
-/* --- FUNGSI PARAMASASTRA (MORFOLOGI PAUGERAN KBJ) --- */
 function prosesParamasastra() {
     let ater = document.getElementById('selAter').value;
     let dasarRaw = document.getElementById('inDasar').value.trim();
@@ -354,7 +359,6 @@ function prosesParamasastra() {
     document.getElementById('outParamJawa').innerText = transliterasiKalimat(fullLatinDisplay);
 }
 
-/* --- ENGINE TRANSLITERASI UTAMA --- */
 function prosesTransliterasi() {
     let teksInput = document.getElementById('inputLatin').value;
     let hasil = transliterasiKalimat(teksInput);
@@ -364,7 +368,6 @@ function prosesTransliterasi() {
 function transliterasiKalimat(teks) {
     let teksDiolah = teks.replace(/e'/g, 'é').replace(/E'/g, 'É');
 
-    // ATURAN 8 KBJ: Anuswara + Konsonan Tidak Luluh (d, dh, b, g, j, th) WAJIB ditambah 'ha' di depan
     teksDiolah = teksDiolah.replace(/\b(mb|ndh|nd|nth|ngg|nj)/gim, function(match) {
         let isUpper = match[0] === match[0].toUpperCase();
         return (isUpper ? 'Ha' : 'ha') + match.toLowerCase();
@@ -375,23 +378,17 @@ function transliterasiKalimat(teks) {
         let kataKata = line.split(/\s+/);
         let kataJawa = kataKata.map(kata => transliterasiKata(kata));
         
-        // UNTUK SCRIPTO CONTINUA (TANPA SPASI ANTAR KATA)
         let lineJoined = kataJawa.join(''); 
         
-        lineJoined = lineJoined.replace(/꧀ꦊ/g, '꧀ꦭꦼ');
-        
-        // Hanya Aksara Swara (A, I, U, E, O) yang diberi ZWNJ (\u200C) setelah pangkon
-        lineJoined = lineJoined.replace(/꧀([ꦄꦆꦈꦌꦎ])/g, '꧀\u200C$1');
+        lineJoined = lineJoined.replace(/꧀([\u200C\uE000]*)ꦊ/g, '꧀$1ꦭꦼ');
+        lineJoined = lineJoined.replace(/꧀([\u200C\uE000]*)([ꦄꦆꦈꦌꦎ])/g, '꧀$1\u200C$2');
 
-        // Pencegahan Tumpuk Tiga (Pasangan Ganda Antarkata)
         lineJoined = lineJoined.replace(/([ꦀ-꧟])꧀([ꦀ-꧟])(꦳?)꧀([ꦀ-꧟])/g, function(match, p1, p2, p3, p4) {
             if (p2 === 'ꦥ' || p2 === 'ꦱ') return match; 
             return p1 + '꧀\u200C' + p2 + p3 + '꧀' + p4; 
         });
 
-        // ATURAN MUTLAK PAUGERAN KBJ UNTUK PASANGAN DH:
-        // Memastikan bahwa SETIAP Pasangan Da Mahaprana (꧀ꦣ) DIPAKSA berubah menjadi Pasangan Da Murda (꧀ꦝ)
-        lineJoined = lineJoined.replace(/꧀ꦣ/g, '꧀ꦝ');
+        lineJoined = lineJoined.replace(/꧀([\u200C\uE000]*)ꦣ/g, '꧀$1ꦝ');
 
         return lineJoined;
     });
@@ -401,18 +398,20 @@ function transliterasiKalimat(teks) {
 function transliterasiKata(rawLatin) {
     if (!rawLatin) return "";
 
-    // ATURAN 6 KBJ: Di tengah kata 'n' mati + 'c'/'j'
-    if (/[a-zA-Z]/i.test(rawLatin) && /(nc|nj)/i.test(rawLatin) && !/^\(/.test(rawLatin)) {
-        let mainRes = transliterasiSingleKata(rawLatin);
-        let altLatin = rawLatin.replace(/nc/gi, 'nyc').replace(/nj/gi, 'nyj');
+    let markerMatch = rawLatin.match(/([\uE000-\uE0FF]+)$/);
+    let marker = markerMatch ? markerMatch[1] : "";
+    let cleanLatin = marker ? rawLatin.slice(0, -marker.length) : rawLatin;
+
+    if (/[a-zA-Z]/i.test(cleanLatin) && /(nc|nj)/i.test(cleanLatin) && !/^\(/.test(cleanLatin)) {
+        let mainRes = transliterasiSingleKata(cleanLatin);
+        let altLatin = cleanLatin.replace(/nc/gi, 'nyc').replace(/nj/gi, 'nyj');
         let altRes = transliterasiSingleKata(altLatin);
         
         if (mainRes !== altRes) {
-            return `${mainRes} (${altRes})`;
+            return `${mainRes} (${altRes})${marker}`;
         }
     }
-
-    return transliterasiSingleKata(rawLatin);
+    return transliterasiSingleKata(cleanLatin) + marker;
 }
 
 function transliterasiSingleKata(rawLatin) {
@@ -428,7 +427,6 @@ function transliterasiSingleKata(rawLatin) {
         return abbr;
     }
 
-    // Aturan cerdas untuk ater-ater dak-, tak-, kok- yang bertemu r/y agar menggunakan pangkon.
     let prefixMatch = rawLatin.match(/^(dak|tak|kok)([ry])(.*)/i);
     if (prefixMatch) {
         let ater = prefixMatch[1].toLowerCase();
@@ -455,45 +453,62 @@ function transliterasiSingleKata(rawLatin) {
 
     let latinProcessed = rawLatin;
 
-    latinProcessed = latinProcessed.replace(/([a-zA-ZéèêÉÈÊ]+)-([a-zA-ZéèêÉÈÊ]+)/g, function(match, root, suffix) {
-        if (root.toLowerCase() === suffix.toLowerCase()) return root + suffix;
-
-        let suffixLower = suffix.toLowerCase();
-        let isPepetSuffix = (suffixLower === 'aken' || suffixLower === 'kaken' || suffixLower === 'en' || suffixLower === 'nen');
-        let modSuffix = isPepetSuffix ? suffix.replace(/[eéèê]/gi, 'e') : suffix.replace(/[eéèê]/gi, 'é');
-
-        let lastChar = root.slice(-1).toLowerCase();
-        let lastTwoChars = root.slice(-2).toLowerCase();
-        let vowels = ['a','i','u','e','o','é','è','ê'];
-        
-        if ((modSuffix.toLowerCase() === 'kaké' || modSuffix.toLowerCase() === 'kaken') && vowels.includes(lastChar)) {
-            modSuffix = 'kxh' + modSuffix.substring(1); 
+    // 1. Pengecualian kata serapan/asing berawalan di- agar tidak dianggap ater-ater
+    let wordMatchForExc = latinProcessed.match(/^([a-zA-ZéèêÉÈÊ]+)/);
+    let isPrefixException = false;
+    
+    if (wordMatchForExc) {
+        const excBases = "diana.*|diandra.*|diar.*|diare.*|dialog.*|diaper.*|diastol.*|diat.*|diuretik.*|diet.*|dieng.*|diesel.*|dioda.*|diorama.*|dion.*|dioksida.*";
+        const excPattern = new RegExp(`^(${excBases})$`, 'i');
+        if (excPattern.test(wordMatchForExc[1])) {
+            isPrefixException = true;
         }
+    }
 
-        let firstCharSuffix = modSuffix.charAt(0).toLowerCase();
-        let consonantToDouble = "";
-
-        if (vowels.includes(firstCharSuffix)) {
-            if (['ng', 'ny', 'dh', 'th'].includes(lastTwoChars)) {
-                consonantToDouble = lastTwoChars;
-            } else if (!vowels.includes(lastChar) && lastChar !== 'y' && lastChar !== 'w') {
-                consonantToDouble = lastChar; 
+    // 2. Pemrosesan ater-ater (di, dak, tak, kok, ka, ke, ko) yang bertemu vokal
+    if (!isPrefixException) {
+        latinProcessed = latinProcessed.replace(/^(dak|tak|kok|ko|di|ka|ke)-?([aiueoéèê])/i, function(match, p1, p2) {
+            let p1Lower = p1.toLowerCase();
+            if (['dak', 'tak', 'kok'].includes(p1Lower)) {
+                return p1.slice(0, -1) + 'kxhx' + p2; 
+            } else {
+                return p1 + 'hx' + p2; 
             }
-        }
-        return root + consonantToDouble + modSuffix;
-    });
+        });
+    }
 
-    // ATURAN BARU YANG LEBIH CERDAS & AMAN:
-    // Hanya berlaku jika ater-ater digabungkan ke vokal menggunakan TANDA HUBUNG (misal: di-isi, dak-ombeni).
-    // Kata dasar seperti 'takon', 'koki', 'dian' akan diabaikan dan diproses normal.
-    latinProcessed = latinProcessed.replace(/^(dak|tak|kok|ko|di|ka|ke)-([aiueoéèê])/i, function(match, p1, p2) {
-        let p1Lower = p1.toLowerCase();
-        if (['dak', 'tak', 'kok'].includes(p1Lower)) {
-            return p1.slice(0, -1) + 'kxhx' + p2; // dak-isi menjadi dakxhxisi (ꦢꦏ꧀ꦲꦶꦱꦶ)
-        } else {
-            return p1 + 'hx' + p2; // di-isi menjadi dihxisi (ꦢꦶꦲꦶꦱꦶ)
-        }
-    });
+    // 3. Pemrosesan tanda hubung (sufiks/penggabungan) berulang sampai seluruh tanda hubung habis terproses
+    while (/([a-zA-ZéèêÉÈÊ]+)-([a-zA-ZéèêÉÈÊ]+)/.test(latinProcessed)) {
+        latinProcessed = latinProcessed.replace(/([a-zA-ZéèêÉÈÊ]+)-([a-zA-ZéèêÉÈÊ]+)/g, function(match, root, suffix) {
+            if (root.toLowerCase() === suffix.toLowerCase()) return root + suffix;
+
+            let suffixLower = suffix.toLowerCase();
+            let isPepetSuffix = (suffixLower === 'aken' || suffixLower === 'kaken' || suffixLower === 'en' || suffixLower === 'nen');
+            let modSuffix = isPepetSuffix ? suffix.replace(/[eéèê]/gi, 'e') : suffix.replace(/[eéèê]/gi, 'é');
+
+            let lastChar = root.slice(-1).toLowerCase();
+            let lastTwoChars = root.slice(-2).toLowerCase();
+            let vowels = ['a','i','u','e','o','é','è','ê'];
+
+            if ((modSuffix.toLowerCase() === 'kaké' || modSuffix.toLowerCase() === 'kaken') && vowels.includes(lastChar)) {
+                modSuffix = 'kxh' + modSuffix.substring(1); 
+            }
+
+            let firstCharSuffix = modSuffix.charAt(0).toLowerCase();
+            let consonantToDouble = "";
+
+            if (['ni', 'nni', 'i'].includes(suffixLower) && vowels.includes(lastChar)) {
+                modSuffix = 'nni';
+            } else if (vowels.includes(firstCharSuffix)) {
+                if (['ng', 'ny', 'dh', 'th'].includes(lastTwoChars)) {
+                    consonantToDouble = lastTwoChars;
+                } else if (!vowels.includes(lastChar) && lastChar !== 'y' && lastChar !== 'w') {
+                    consonantToDouble = lastChar; 
+                }
+            }
+            return root + consonantToDouble + modSuffix;
+        });
+    }
 
     let prevLatin = "";
     while (latinProcessed !== prevLatin) {
@@ -549,7 +564,7 @@ function transliterasiSingleKata(rawLatin) {
             c = 'j'; jump = 1; isMurda = true;
         } else if (['ngx'].includes(c3)) {
             c = c3; jump = 3;
-        } else if (['ng','ny','dh','th','nx','kh','dz','gh','kx','rx','hx'].includes(c2)) {
+        } else if (['ng','ny','dh','th','nx','kh','dz','gh','kx','rx','hx','sy','sh'].includes(c2)) {
             c = c2; jump = 2;
         } else if (KAMUS_AKSARA[c1]) {
             c = c1; jump = 1;

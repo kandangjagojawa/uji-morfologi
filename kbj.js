@@ -350,11 +350,6 @@ function prosesParamasastra() {
         }
     }
 
-    let fullLatinDisplay = resultLatinMain;
-    if (resultLatinAlt !== "") {
-        fullLatinDisplay = `${resultLatinMain} (${resultLatinAlt})`;
-    }
-
     document.getElementById('outParamLatin').value = fullLatinDisplay;
     document.getElementById('outParamJawa').innerText = transliterasiKalimat(fullLatinDisplay);
 }
@@ -368,7 +363,25 @@ function prosesTransliterasi() {
 function transliterasiKalimat(teks) {
     let teksDiolah = teks.replace(/e'/g, 'é').replace(/E'/g, 'É');
 
-    teksDiolah = teksDiolah.replace(/\b(mb|ndh|nd|nth|ngg|nj)/gim, function(match) {
+    // Mapping Simbol & Pada Unicode Aksara Jawa
+    teksDiolah = teksDiolah
+        .replace(/\|\|/g, '\uA9CB')
+        .replace(/\|/g, '\uA9CA')
+        .replace(/\(\(/g, '\uA9C1')         .replace(/\)\)/g, '\uA9C2')
+        .replace(/<_/g, '\uA9C3')
+        .replace(/<>/g, '\uA9C4')
+        .replace(/>\^/g, '\uA9C5')
+        .replace(/\(o\)/g, '\uA9C6')
+        .replace(/:=/g, '\uA9C7')
+        .replace(/\[\\/g, '\uA9CC')         .replace(/\\\]/g, '\uA9CD')
+        .replace(/\^2/g, '\uA9CE')
+        .replace(/_2/g, '\uA9CF')
+        .replace(/~~/g, '\uA9DE')
+        .replace(/##/g, '\uA9DF')
+        .replace(/\^3/g, '\uA981')
+        .replace(/\+3/g, '\uA9B3');
+
+    teksDiolah = teksDiolah.replace(/(?<![a-zA-Za-zÀ-ÿ])(mb|ndh|nd|nth|ngg|nj)/gim, function(match) {
         let isUpper = match[0] === match[0].toUpperCase();
         return (isUpper ? 'Ha' : 'ha') + match.toLowerCase();
     });
@@ -477,7 +490,12 @@ function transliterasiSingleKata(rawLatin) {
         });
     }
 
-    // 3. Pemrosesan tanda hubung (sufiks/penggabungan) berulang sampai seluruh tanda hubung habis terproses
+    // 3. Konversi vokal pemisah diftong ber-tanda hubung
+    latinProcessed = latinProcessed.replace(/([aAEÊaeê])-([aiueoéèêAIUEOÉÈÊ])/g, '$1h$2');
+    latinProcessed = latinProcessed.replace(/([iIÉÈiéè])-([aiueoéèêAIUEOÉÈÊ])/g, '$1y$2');
+    latinProcessed = latinProcessed.replace(/([uoUO])-([aiueoéèêAIUEOÉÈÊ])/g, '$1w$2');
+
+    // 4. Pemrosesan tanda hubung (sufiks/penggabungan) berulang sampai seluruh tanda hubung habis terproses
     while (/([a-zA-ZéèêÉÈÊ]+)-([a-zA-ZéèêÉÈÊ]+)/.test(latinProcessed)) {
         latinProcessed = latinProcessed.replace(/([a-zA-ZéèêÉÈÊ]+)-([a-zA-ZéèêÉÈÊ]+)/g, function(match, root, suffix) {
             if (root.toLowerCase() === suffix.toLowerCase()) return root + suffix;
@@ -541,7 +559,8 @@ function transliterasiSingleKata(rawLatin) {
             i++; continue; 
         }
         
-        if (!/[a-zA-ZéèêÉÈÊ]/.test(latin[i])) {
+        // Perbaikan Regex: sertakan vokal beraksen agar tidak dilewati sebagai karakter Latin non-huruf
+        if (!/[a-zA-ZéèêÉÈÊ]/i.test(latin[i])) {
             res += latin[i]; i++; continue; 
         }
 

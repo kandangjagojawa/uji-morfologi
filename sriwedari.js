@@ -438,12 +438,32 @@ function prosesTransliterasi() {
 function transliterasiKalimat(teks) {
     let teksDiolah = teks.replace(/e'/g, 'é').replace(/E'/g, 'É');
 
+    // Mapping Simbol & Pada Unicode Aksara Jawa
+    teksDiolah = teksDiolah
+        .replace(/\|\|/g, '\uA9CB')
+        .replace(/\|/g, '\uA9CA')
+        .replace(/\(\(/g, '\uA9C1')         .replace(/\)\)/g, '\uA9C2')
+        .replace(/<_/g, '\uA9C3')
+        .replace(/<>/g, '\uA9C4')
+        .replace(/>\^/g, '\uA9C5')
+        .replace(/\(o\)/g, '\uA9C6')
+        .replace(/:=/g, '\uA9C7')
+        .replace(/\[\\/g, '\uA9CC')         .replace(/\\\]/g, '\uA9CD')
+        .replace(/\^2/g, '\uA9CE')
+        .replace(/_2/g, '\uA9CF')
+        .replace(/~~/g, '\uA9DE')
+        .replace(/##/g, '\uA9DF')
+        .replace(/\^3/g, '\uA980')
+        .replace(/\+3/g, '\uA9B3');
+
     teksDiolah = teksDiolah.replace(/\bngg/gi, function(match) {
         return (match[0] === 'N' || match[0] === 'H') ? 'Hangg' : 'hangg';
     });
 
-    teksDiolah = teksDiolah.replace(/(^|[\.\?!]\s*)(mb|ndh|nd|nth|nc|nj)/gim, function(match, p1, p2) {
-        return p1 + 'ha' + p2;
+    // PERBAIKAN: Anuswara Tancap kini berlaku untuk semua kata (tidak hanya di awal kalimat)
+    // Menggunakan \b untuk menangkap batas awal semua kata
+    teksDiolah = teksDiolah.replace(/\b(mb|ndh|nd|nth|nc|nj)/gim, function(match, p1) {
+        return 'ha' + p1;
     });
 
     let baris = teksDiolah.split('\n');
@@ -556,36 +576,6 @@ function transliterasiSingleKata(rawLatin) {
         return prefix + p2 + 'r' + p3 + p4; 
     });
 
-    latinProcessed = latinProcessed.replace(/([a-zA-ZéèêÉÈÊ]+)-([a-zA-ZéèêÉÈÊ]+)/g, function(match, root, suffix) {
-        if (root.toLowerCase() === suffix.toLowerCase()) return root + suffix;
-
-        let suffixLower = suffix.toLowerCase();
-        let isPepetSuffix = (suffixLower === 'aken' || suffixLower === 'kaken' || suffixLower === 'en' || suffixLower === 'nen');
-        let modSuffix = isPepetSuffix ? suffix.replace(/[eéèê]/gi, 'e') : suffix.replace(/[eéèê]/gi, 'é');
-
-        let lastChar = root.slice(-1).toLowerCase();
-        let lastTwoChars = root.slice(-2).toLowerCase();
-        let vowels = ['a','i','u','e','o','é','è','ê'];
-
-        if ((modSuffix.toLowerCase() === 'kaké' || modSuffix.toLowerCase() === 'kaken') && vowels.includes(lastChar)) {
-            modSuffix = 'kxh' + modSuffix.substring(1); 
-        }
-
-        let firstCharSuffix = modSuffix.charAt(0).toLowerCase();
-        let consonantToDouble = "";
-
-        if (['ni', 'nni', 'i'].includes(suffixLower) && vowels.includes(lastChar)) {
-            modSuffix = 'nni';
-        } else if (vowels.includes(firstCharSuffix)) {
-            if (['ng', 'ny', 'dh', 'th'].includes(lastTwoChars)) {
-                consonantToDouble = lastTwoChars;
-            } else if (!vowels.includes(lastChar) && lastChar !== 'y' && lastChar !== 'w') {
-                consonantToDouble = lastChar; 
-            }
-        }
-        return root + consonantToDouble + modSuffix;
-    });
-
     let wordMatchForExc = latinProcessed.match(/^([a-zA-ZéèêÉÈÊ]+)/);
     let isPrefixException = false;
     
@@ -615,6 +605,44 @@ function transliterasiSingleKata(rawLatin) {
     }
 
     latinProcessed = latinProcessed.replace(/^(di)-([iI])/i, '$1hx$2');
+
+    // 1. Konversi vokal pemisah diftong ber-tanda hubung (a-u -> ahu, a-i -> ahi, dsb.)
+    latinProcessed = latinProcessed.replace(/([aAEÊaeê])-([aiueoéèêAIUEOÉÈÊ])/g, '$1h$2');
+    latinProcessed = latinProcessed.replace(/([iIÉÈiéè])-([aiueoéèêAIUEOÉÈÊ])/g, '$1y$2');
+    latinProcessed = latinProcessed.replace(/([uoUO])-([aiueoéèêAIUEOÉÈÊ])/g, '$1w$2');
+
+    // 2. Pemrosesan sufiks/imbuhan ber-tanda hubung secara berulang (iteratif while-loop)
+    while (/([a-zA-ZéèêÉÈÊ]+)-([a-zA-ZéèêÉÈÊ]+)/.test(latinProcessed)) {
+        latinProcessed = latinProcessed.replace(/([a-zA-ZéèêÉÈÊ]+)-([a-zA-ZéèêÉÈÊ]+)/g, function(match, root, suffix) {
+            if (root.toLowerCase() === suffix.toLowerCase()) return root + suffix;
+
+            let suffixLower = suffix.toLowerCase();
+            let isPepetSuffix = (suffixLower === 'aken' || suffixLower === 'kaken' || suffixLower === 'en' || suffixLower === 'nen');
+            let modSuffix = isPepetSuffix ? suffix.replace(/[eéèê]/gi, 'e') : suffix.replace(/[eéèê]/gi, 'é');
+
+            let lastChar = root.slice(-1).toLowerCase();
+            let lastTwoChars = root.slice(-2).toLowerCase();
+            let vowels = ['a','i','u','e','o','é','è','ê'];
+
+            if ((modSuffix.toLowerCase() === 'kaké' || modSuffix.toLowerCase() === 'kaken') && vowels.includes(lastChar)) {
+                modSuffix = 'kxh' + modSuffix.substring(1); 
+            }
+
+            let firstCharSuffix = modSuffix.charAt(0).toLowerCase();
+            let consonantToDouble = "";
+
+            if (['ni', 'nni', 'i'].includes(suffixLower) && vowels.includes(lastChar)) {
+                modSuffix = 'nni';
+            } else if (vowels.includes(firstCharSuffix)) {
+                if (['ng', 'ny', 'dh', 'th'].includes(lastTwoChars)) {
+                    consonantToDouble = lastTwoChars;
+                } else if (!vowels.includes(lastChar) && lastChar !== 'y' && lastChar !== 'w') {
+                    consonantToDouble = lastChar; 
+                }
+            }
+            return root + consonantToDouble + modSuffix;
+        });
+    }
 
     let prevLatin = "";
     while (latinProcessed !== prevLatin) {
@@ -670,6 +698,10 @@ function transliterasiSingleKata(rawLatin) {
         if (latin[i] === '.') { 
             if (res.endsWith('꧀')) { res += '꧈\u200C'; } else { res += '꧉'; }
             i++; continue; 
+        }
+
+        if (latin[i] === '-') {
+            i++; continue;
         }
         
         if (!/[a-zA-ZéèêÉÈÊ]/.test(latin[i])) {
